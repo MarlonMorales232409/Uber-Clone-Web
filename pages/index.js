@@ -1,11 +1,31 @@
-import React, { useEffect } from "react";
+import { useEffect, useState } from "react";
 import tw from "tailwind-styled-components";
 import "mapbox-gl/dist/mapbox-gl.css";
-import mapboxgl from "!mapbox-gl";
 import Map from "./Components/Map";
 import Link from "next/link";
+import { auth } from "../firebase";
+import { useRouter } from "next/router";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function Home() {
+  const [user, setUser] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser({
+          name: user.displayName,
+          photoUrl: user.photoURL,
+        });
+      } else {
+        router.push("/login");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <Wrapper>
       <Map />
@@ -13,8 +33,11 @@ export default function Home() {
         <Header>
           <UberLogo src=" https://i.ibb.co/84stgjq/uber-technologies-new-20218114.jpg" />
           <Profile>
-            <Name>Marlon Morales</Name>
-            <UserImage src="https://lh3.googleusercontent.com/a-/AOh14Gj7rcYEbZp-A5R4uG5LrNBBPUg5NJouVq_bRZhGNg=s288-p-no" />
+            <Name>{user && user.name}</Name>
+            <UserImage
+              src={user && user.photoUrl}
+              onClick={() => signOut(auth)}
+            />
           </Profile>
         </Header>
 
@@ -66,6 +89,7 @@ const Name = tw.div`
 const UserImage = tw.img`
   h-12 w-12 rounded-full
   border border-gray-200 p-px
+  cursor-pointer
 `;
 
 const ActionBottons = tw.div`
